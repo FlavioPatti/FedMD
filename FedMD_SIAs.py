@@ -9,7 +9,6 @@ from utils.Sia import SIA
 from utils.logger import Logger, mkdir_p
 import os
 
-
 def get_logits(model, data_loader, cuda=True):
     model.eval()
     # logits for of the unlabeld public dataset
