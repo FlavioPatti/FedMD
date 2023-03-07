@@ -1,4 +1,4 @@
-**Implementation of FedMD**
+**This repo contains the implementation of FedMD both for ID (alpha = 1000) and non-IID conditions (alpha ~ 0)**
 
 At the beginning of FedMD, each local model is first initialized and trained on the public dataset.
 
