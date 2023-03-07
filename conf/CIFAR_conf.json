@@ -32,7 +32,6 @@
     "N_private_training_round": 5,
     "private_training_batchsize" : 32,
     "logits_matching_batchsize": 128,
-    "EMNIST_dir": None,
     "result_save_dir": "./result_CIFAR_balanced/"
 }
 

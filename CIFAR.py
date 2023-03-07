@@ -5,8 +5,8 @@ import torch
 import numpy as np
 from torch.utils.data import TensorDataset
 from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_dirc_private_data
-from FedMD_SIAs import FedMD_SIAs
-from utils.Neural_Networks import cnn_2layer_fc_model_cifar, cnn_3layer_fc_model_cifar, cifar_student, train_models, Resnet20, train_and_eval
+from FedMD import FedMD
+from utils.Neural_Networks import cnn_2layer_fc_model_cifar, cnn_3layer_fc_model_cifar, Resnet20, train_and_eval
 
 
 def parseArg():
@@ -29,8 +29,6 @@ CANDIDATE_MODELS = {"2_layer_CNN": cnn_2layer_fc_model_cifar,
                     "3_layer_CNN": cnn_3layer_fc_model_cifar,
                     "resnet20": Resnet20}
 
-student_model = cifar_student
-
 if __name__ == "__main__":
     conf_file = parseArg()
     with open(conf_file, "r") as f:
@@ -48,8 +46,7 @@ if __name__ == "__main__":
         n_classes = len(public_classes) + len(private_classes)
         alpha = conf_dict["alpha"]
         manualseed = conf_dict["manualseed"]
-
-        emnist_data_dir = conf_dict["EMNIST_dir"]
+        
         N_parties = conf_dict["N_parties"]
         N_samples_per_class = conf_dict["N_samples_per_class"]
 
@@ -64,7 +61,9 @@ if __name__ == "__main__":
         result_save_dir = conf_dict["result_save_dir"]
 
     del conf_dict, conf_file
-
+    
+    # Load public and private datasets
+    
     X_train_CIFAR10, y_train_CIFAR10, X_test_CIFAR10, y_test_CIFAR10 \
         = load_CIFAR_data(data_type="CIFAR10",
                           standarized=True, verbose=True)
@@ -116,16 +115,18 @@ if __name__ == "__main__":
     pre_models_dir = "./pretrained_CIFAR10/"
     parties = []
     
-
+    #Load pre-trained models
+    #Model 0-8: CNN
+    #Model 9: our implementation of ResNet20
+    
     for i, item in enumerate(model_config):
         model_name = item["model_type"]
         model_params = item["params"]
         tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
         print("model {0} : {1}".format(i, model_saved_names[i]))
-        print(tmp)
         if model_saved_names[i] == 'RESNET20':
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset,
-                                                                               test_dataset, 20, batch_size=128, name = model_saved_names[i])
+                                                                               test_dataset,num_epochs=20, batch_size=128, name = model_saved_names[i])
             parties.append(model_A)
         else:
             tmp.load_state_dict(torch.load(os.path.join(pre_models_dir, "{}.h5".format(model_saved_names[i]))))
@@ -133,15 +134,14 @@ if __name__ == "__main__":
 
         del model_name, model_params, tmp
 
-    student_model = student_model(num_classes=n_classes)
-
     del X_train_CIFAR10, y_train_CIFAR10, X_test_CIFAR10, y_test_CIFAR10, \
         X_train_CIFAR100, y_train_CIFAR100, X_test_CIFAR100, y_test_CIFAR100,
 
-    fedmd = FedMD_SIAs(parties,
+    #Run FedMD with public and private data on pretrained models 
+    
+    fedmd = FedMD(parties,
                        public_dataset=public_dataset,
                        private_data=private_data,
-                       s_model=student_model,
                        alpha=alpha,
                        model_saved_name=model_saved_names,
                        total_private_data=total_private_data,
@@ -160,4 +160,4 @@ if __name__ == "__main__":
 
     initialization_result = fedmd.init_result
 
-    collaboration_performance = fedmd.collaborative_training_SIA()
+    collaboration_performance = fedmd.collaborative_training()

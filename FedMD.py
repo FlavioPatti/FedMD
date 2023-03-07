@@ -36,8 +36,8 @@ def get_logits(model, data_loader, cuda=True):
     return logits
 
 
-class FedMD_SIAs():
-    def __init__(self, parties, s_model, public_dataset,
+class FedMD():
+    def __init__(self, parties, public_dataset,
                  private_data, total_private_data,
                  private_test_data, source_data, total_source_data, N_alignment,
                  N_rounds,
@@ -48,7 +48,6 @@ class FedMD_SIAs():
                  N_logits_matching_round, logits_matching_batchsize,
                  N_private_training_round, private_training_batchsize,
                  names):
-        self.student_model = s_model
         self.alpha = alpha
         self.N_parties = len(parties)
         self.public_dataset = public_dataset
@@ -100,7 +99,7 @@ class FedMD_SIAs():
 
         # END FOR LOOP
 
-    def collaborative_training_SIA(self):
+    def collaborative_training(self):
         # start collaborating training
 
         if not os.path.isdir(self.checkpoint):
