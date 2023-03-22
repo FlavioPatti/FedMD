@@ -7,7 +7,7 @@ from torch.utils.data import TensorDataset
 from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_dirc_private_data
 from FedMD import FedMD
 from utils.Neural_Networks import cnn_2layer_fc_model_cifar, cnn_3layer_fc_model_cifar, Resnet20, train_and_eval
-
+from modeling import VisionTransformer, CONFIGS
 
 def parseArg():
     parser = argparse.ArgumentParser(description='FedMD, a federated learning framework. \
@@ -132,7 +132,14 @@ if __name__ == "__main__":
             tmp.load_state_dict(torch.load(os.path.join(pre_models_dir, "{}.h5".format(model_saved_names[i]))))
             parties.append(tmp)
 
-        del model_name, model_params, tmp
+    print("model 10 : vit_B")
+    config = CONFIGS['ViT-B_32']
+    client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
+    client_model.device = 'cuda'
+    model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
+                                                                            test_dataset,num_epochs=20, batch_size=512)
+    parties.append(model_A)
+    del model_name, model_params, tmp
 
     del X_train_CIFAR10, y_train_CIFAR10, X_test_CIFAR10, y_test_CIFAR10, \
         X_train_CIFAR100, y_train_CIFAR100, X_test_CIFAR100, y_test_CIFAR100,
