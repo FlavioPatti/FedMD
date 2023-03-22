@@ -116,29 +116,37 @@ if __name__ == "__main__":
     parties = []
     
     #Load pre-trained models
-    #Model 0-8: CNN
-    #Model 9: our implementation of ResNet20
+    #Model 0-7: CNN
+    #Model 8: our implementation of ResNet20
+    #Model 9: vit-b
     
     for i, item in enumerate(model_config):
-        model_name = item["model_type"]
-        model_params = item["params"]
-        tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
-        print("model {0} : {1}".format(i, model_saved_names[i]))
+        
         if model_saved_names[i] == 'RESNET20':
-            model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset,
-                                                                               test_dataset,num_epochs=20, batch_size=128, name = model_saved_names[i])
-            parties.append(model_A)
-        else:
-            tmp.load_state_dict(torch.load(os.path.join(pre_models_dir, "{}.h5".format(model_saved_names[i]))))
-            parties.append(tmp)
+          model_name = item["model_type"]
+          model_params = item["params"]
+          tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
+          print("model {0} : {1}".format(i, model_saved_names[i]))
+          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset, 
+                                                                              test_dataset,num_epochs=1, batch_size=128, name = model_saved_names[i]) #20 epoche
+          parties.append(model_A)
 
-    print("model 10 : vit_B")
-    config = CONFIGS['ViT-B_32']
-    client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
-    client_model.device = 'cuda'
-    model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
-                                                                            test_dataset,num_epochs=20, batch_size=512)
-    parties.append(model_A)
+        elif model_saved_names[i]=="VIT_B":
+          config = CONFIGS['ViT-B_32']
+          client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
+          client_model.device = 'cuda'
+          print("model {0} : {1}".format(i, model_saved_names[i]))
+          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
+                                                                                  test_dataset,num_epochs=1, batch_size=512, name = model_saved_names[i])
+          parties.append(model_A)
+        else:
+          model_name = item["model_type"]
+          model_params = item["params"]
+          tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
+          print("model {0} : {1}".format(i, model_saved_names[i]))
+          tmp.load_state_dict(torch.load(os.path.join(pre_models_dir, "{}.h5".format(model_saved_names[i]))))
+          parties.append(tmp)
+
     del model_name, model_params, tmp
 
     del X_train_CIFAR10, y_train_CIFAR10, X_test_CIFAR10, y_test_CIFAR10, \
@@ -167,4 +175,4 @@ if __name__ == "__main__":
 
     initialization_result = fedmd.init_result
 
-    collaboration_performance = fedmd.collaborative_training()
+    collaboration_performance = fedmd.collaborative_training(names = model_saved_names)

@@ -9,7 +9,7 @@ from utils.Sia import SIA
 from utils.logger import Logger, mkdir_p
 import os
 
-def get_logits(model, data_loader, cuda=True):
+def get_logits(model, data_loader, names, cuda):
     model.eval()
     # logits for of the unlabeld public dataset
     logits = []
@@ -22,7 +22,12 @@ def get_logits(model, data_loader, cuda=True):
                 data_batch = data_batch.cuda()  # (B,3,32,32)
 
             # compute model output
-            output_batch = model(data_batch)
+            if names == "VIT_B":
+              output_batch = model(data_batch)[0]
+            else:
+              output_batch = model(data_batch)
+            
+            #print(f"names = {names}, output_batch = {output_batch}")
 
             # extract data from torch Variable, move to cpu, convert to numpy arrays
             output_batch = output_batch.cpu().numpy()
@@ -82,6 +87,8 @@ class FedMD():
             train_dataset = (TensorDataset(torch.from_numpy(private_data[i]["X"]).float(),
                                            torch.from_numpy(private_data[i]["y"]).long()))
 
+            #print(f"len train = {len(train_dataset)}") 300
+            #print(f"len test = {len(test_dataset)}")  600
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_A_twin, train_dataset,
                                                                                test_dataset, 25, batch_size=32, name = names[i])
 
@@ -99,7 +106,7 @@ class FedMD():
 
         # END FOR LOOP
 
-    def collaborative_training(self):
+    def collaborative_training(self, names):
         # start collaborating training
 
         if not os.path.isdir(self.checkpoint):
@@ -118,8 +125,9 @@ class FedMD():
             alignment_data = generate_alignment_data(self.public_dataset["X"],
                                                      self.public_dataset["y"],
                                                      self.N_alignment)
-
             alignment_dataloader = (torch.from_numpy(alignment_data["X"]).float())
+            #print(f"len alignmet = {len(alignment_data)}") 5000
+
             print("round ", r)
 
             print("update logits ... ")
@@ -127,8 +135,10 @@ class FedMD():
             # update logits
             logits = 0
 
+            i = 0
             for d in self.collaborative_parties:
-                logits += get_logits(d["model"], alignment_dataloader, cuda=True)
+              logits += get_logits(d["model"], alignment_dataloader, names[i], cuda=True)
+              i = i + 1
 
             logits /= self.N_parties
 
@@ -137,9 +147,10 @@ class FedMD():
 
             private_test_dataloader = (TensorDataset(torch.from_numpy(self.private_test_data["X"]).float(),
                                                      torch.from_numpy(self.private_test_data["y"]).long()))
+            #print(f"len private = {len(private_test_dataloader)}") 600
 
             for index, d in enumerate(self.collaborative_parties):
-                metrics_mean = evaluate(d["model"], private_test_dataloader, cuda=True)
+                metrics_mean = evaluate(d["model"], private_test_dataloader, cuda = True,name = names[index])
                 collaboration_performance[index].append(metrics_mean["acc"])
 
                 print(collaboration_performance[index][-1])
@@ -155,9 +166,11 @@ class FedMD():
                 public_dataloader = (
                     TensorDataset(torch.from_numpy(alignment_data["X"]).float(), torch.from_numpy(logits).float()))
 
+                #print(f"len public dataloader = {len(public_dataloader)}") 5000
+            
                 model_alignment = train(d["model"], public_dataloader, epochs=self.N_logits_matching_round, cuda=True,
                                         batch_size=self.logits_matching_batchsize,
-                                        loss_fn=nn.L1Loss())
+                                        loss_fn=nn.L1Loss(), name = names[index])
 
                 print("model {0} done alignment".format(index))
 
@@ -165,9 +178,11 @@ class FedMD():
 
                 private_dataloader = (TensorDataset(torch.from_numpy(self.private_data[index]["X"]).float(),
                                                     torch.from_numpy(self.private_data[index]["y"]).long()))
+                
+                #print(f"len private dataloader = {len(private_dataloader)}") 300
                 model_local = train(model_alignment, private_dataloader, epochs=self.N_private_training_round,
                                     cuda=True, batch_size=self.private_training_batchsize,
-                                    loss_fn=nn.CrossEntropyLoss())
+                                    loss_fn=nn.CrossEntropyLoss(), name = names[index])
 
                 d["model"] = model_local
                 print("model {0} done private training. \n".format(index))

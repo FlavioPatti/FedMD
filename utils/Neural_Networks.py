@@ -346,8 +346,12 @@ def train_epoch(model, data_loader, cuda=True, lr=0.001,batch_size=128,loss_fn =
                 train_batch = train_batch.cuda()        # (B,3,32,32)
                 labels_batch = labels_batch.cuda()      # (B,)
 
+            
+            if name == "VIT_B":
+              output_batch = model(train_batch)[0]
+            else:
             # compute model output and loss
-            output_batch = model(train_batch)           # logit without softmax
+              output_batch = model(train_batch)           # logit without softmax
             loss = loss_fn(output_batch, labels_batch)
 
             optim.zero_grad()
@@ -379,7 +383,7 @@ def train(model, data_loader, epochs, cuda=True, lr=0.001,batch_size=128,loss_fn
 
     return model
 
-def evaluate(model, data_loader, cuda=True):
+def evaluate(model, data_loader, cuda, name):
     loss_fn = nn.CrossEntropyLoss()
     data_loader=DataLoader(data_loader,batch_size=128,shuffle=False)
     model.eval()
@@ -394,7 +398,10 @@ def evaluate(model, data_loader, cuda=True):
                 labels_batch = labels_batch.cuda()      # (B,)
 
             # compute model output
-            output_batch = model(data_batch)
+            if name == "VIT_B":
+              output_batch = model(data_batch)[0]
+            else:
+              output_batch = model(data_batch)
             loss = loss_fn(output_batch, labels_batch)
 
             # extract data from torch Variable, move to cpu, convert to numpy arrays
@@ -417,8 +424,8 @@ def train_and_eval(model, train_loader, dev_loader, num_epochs,batch_size,lr=0.0
     model_trained=train(model,train_loader,epochs=num_epochs,lr=lr,batch_size=batch_size,weight_decay=weight_decay, name = name)
 
     # ********************* Evaluate for one epoch on training and validation set *********************
-    val_metrics = evaluate(model_trained, dev_loader, cuda=True)     # {'acc':acc, 'loss':loss}
-    train_metrics = evaluate(model_trained, train_loader, cuda=True)     # {'acc':acc, 'loss':loss}
+    val_metrics = evaluate(model_trained, dev_loader, cuda=True, name = name)     # {'acc':acc, 'loss':loss}
+    train_metrics = evaluate(model_trained, train_loader, cuda=True, name = name)     # {'acc':acc, 'loss':loss}
 
     val_acc = val_metrics['acc']
     val_loss=val_metrics['loss']
