@@ -22,7 +22,7 @@ def get_logits(model, data_loader, names, cuda):
                 data_batch = data_batch.cuda()  # (B,3,32,32)
 
             # compute model output
-            if names == "VIT_B":
+            if names == "VIT_B" or names == "VIT_L":
               output_batch = model(data_batch)[0]
             else:
               output_batch = model(data_batch)
@@ -137,6 +137,7 @@ class FedMD():
 
             i = 0
             for d in self.collaborative_parties:
+              print(f"nome = {names[i]}")
               logits += get_logits(d["model"], alignment_dataloader, names[i], cuda=True)
               i = i + 1
 

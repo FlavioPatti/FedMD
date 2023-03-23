@@ -347,7 +347,7 @@ def train_epoch(model, data_loader, cuda=True, lr=0.001,batch_size=128,loss_fn =
                 labels_batch = labels_batch.cuda()      # (B,)
 
             
-            if name == "VIT_B":
+            if name == "VIT_B" or name == "VIT_L":
               output_batch = model(train_batch)[0]
             else:
             # compute model output and loss
@@ -398,7 +398,7 @@ def evaluate(model, data_loader, cuda, name):
                 labels_batch = labels_batch.cuda()      # (B,)
 
             # compute model output
-            if name == "VIT_B":
+            if name == "VIT_B" or name == "VIT_L":
               output_batch = model(data_batch)[0]
             else:
               output_batch = model(data_batch)

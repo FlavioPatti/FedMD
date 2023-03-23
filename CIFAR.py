@@ -116,9 +116,11 @@ if __name__ == "__main__":
     parties = []
     
     #Load pre-trained models
-    #Model 0-7: CNN
-    #Model 8: our implementation of ResNet20
-    #Model 9: vit-b
+    #Model 0-5: CNN
+    #Model 6: our implementation of ResNet20
+    #Model 7: ResNet50
+    #Model 8: vit-b
+    #Model 9: vit-l
     
     for i, item in enumerate(model_config):
         
@@ -131,8 +133,25 @@ if __name__ == "__main__":
                                                                               test_dataset,num_epochs=1, batch_size=128, name = model_saved_names[i]) #20 epoche
           parties.append(model_A)
 
+        elif model_saved_names[i]=='RESNET50':
+          from torchvision.models import resnet50
+          client_model = resnet50(weights=None)
+          print("model {0} : {1}".format(i, model_saved_names[i]))
+          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
+                                                                                  test_dataset,num_epochs=1, batch_size=128, name = model_saved_names[i])
+          parties.append(model_A)
+
         elif model_saved_names[i]=="VIT_B":
           config = CONFIGS['ViT-B_32']
+          client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
+          client_model.device = 'cuda'
+          print("model {0} : {1}".format(i, model_saved_names[i]))
+          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
+                                                                                  test_dataset,num_epochs=1, batch_size=512, name = model_saved_names[i])
+          parties.append(model_A)
+
+        elif model_saved_names[i]=="VIT_L":
+          config = CONFIGS['ViT-L_32']
           client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
           client_model.device = 'cuda'
           print("model {0} : {1}".format(i, model_saved_names[i]))
