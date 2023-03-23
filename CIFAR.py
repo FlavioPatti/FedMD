@@ -6,8 +6,10 @@ import numpy as np
 from torch.utils.data import TensorDataset
 from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_dirc_private_data
 from FedMD import FedMD
-from utils.Neural_Networks import cnn_2layer_fc_model_cifar, cnn_3layer_fc_model_cifar, Resnet20_groupNorm, Resnet50, train_and_eval
+from utils.Neural_Networks import cnn_2layer_fc_model_cifar, cnn_3layer_fc_model_cifar, train_and_eval
 from utils.Resnet20Batch import Resnet20_batchNorm
+from utils.Resnet20Group import Resnet20_groupNorm
+from utils.Resnet50 import Resnet50
 from modeling import VisionTransformer, CONFIGS
 
 def parseArg():
