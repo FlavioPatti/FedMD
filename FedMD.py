@@ -79,7 +79,7 @@ class FedMD():
         test_dataset = (TensorDataset(torch.from_numpy(private_test_data["X"]).float(),
                                       torch.from_numpy(private_test_data["y"]).long()))
         for i in range(self.N_parties):
-            print("model ", i)
+            #print("model ", i)
             model_A_twin = copy.deepcopy(parties[i])
 
             print("start full stack training ... ")

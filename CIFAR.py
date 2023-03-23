@@ -6,7 +6,8 @@ import numpy as np
 from torch.utils.data import TensorDataset
 from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_dirc_private_data
 from FedMD import FedMD
-from utils.Neural_Networks import cnn_2layer_fc_model_cifar, cnn_3layer_fc_model_cifar, Resnet20, train_and_eval
+from utils.Neural_Networks import cnn_2layer_fc_model_cifar, cnn_3layer_fc_model_cifar, Resnet20_groupNorm, Resnet50, train_and_eval
+from utils.Resnet20Batch import Resnet20_batchNorm
 from modeling import VisionTransformer, CONFIGS
 
 def parseArg():
@@ -27,7 +28,9 @@ def parseArg():
 
 CANDIDATE_MODELS = {"2_layer_CNN": cnn_2layer_fc_model_cifar,
                     "3_layer_CNN": cnn_3layer_fc_model_cifar,
-                    "resnet20": Resnet20}
+                    "resnet20_group": Resnet20_groupNorm,
+                    "resnet20_batch": Resnet20_batchNorm,
+                    "resnet50": Resnet50}
 
 if __name__ == "__main__":
     conf_file = parseArg()
@@ -116,15 +119,16 @@ if __name__ == "__main__":
     parties = []
     
     #Load pre-trained models
-    #Model 0-5: CNN
-    #Model 6: our implementation of ResNet20
+    #Model 0-4: CNN
+    #Model 5: our implementation of ResNet20 with group norm
+    #Model 6: out implementation of ResNet20 with batch norm
     #Model 7: ResNet50
-    #Model 8: vit-b
-    #Model 9: vit-l
+    #Model 8: vit-base
+    #Model 9: vit-large
     
     for i, item in enumerate(model_config):
         
-        if model_saved_names[i] == 'RESNET20':
+        if model_saved_names[i] == 'RESNET20_G' or model_saved_names[i] == 'RESNET20_B':
           model_name = item["model_type"]
           model_params = item["params"]
           tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
@@ -134,8 +138,9 @@ if __name__ == "__main__":
           parties.append(model_A)
 
         elif model_saved_names[i]=='RESNET50':
-          from torchvision.models import resnet50
-          client_model = resnet50(weights=None)
+          model_name = item["model_type"]
+          model_params = item["params"]
+          client_model = Resnet50(n_classes)
           print("model {0} : {1}".format(i, model_saved_names[i]))
           model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
                                                                                   test_dataset,num_epochs=1, batch_size=128, name = model_saved_names[i])
