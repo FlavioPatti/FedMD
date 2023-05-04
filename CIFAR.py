@@ -11,6 +11,10 @@ from utils.Resnet20Batch import Resnet20_batchNorm
 from utils.Resnet20Group import Resnet20_groupNorm
 from utils.Resnet50 import Resnet50
 from modeling import VisionTransformer, CONFIGS
+import wandb
+
+os.environ["WANDB_API_KEY"] = "a4771dae610ad0306d4c407ecca287079d83d0d9"
+os.environ["WANDB_MODE"] = "online"
 
 def parseArg():
     parser = argparse.ArgumentParser(description='FedMD, a federated learning framework. \
@@ -33,6 +37,39 @@ CANDIDATE_MODELS = {"2_layer_CNN": cnn_2layer_fc_model_cifar,
                     "resnet20_group": Resnet20_groupNorm,
                     "resnet20_batch": Resnet20_batchNorm,
                     "resnet50": Resnet50}
+
+def init_wandb(args, alpha=None, run_id=None):
+        group_name = args.algorithm
+        
+
+        configuration = args
+        if alpha is not None:
+            alpha = float(alpha.split('_')[1])
+            if alpha not in [0.05, 0.1, 0.2, 0.5]:
+                alpha = int(alpha)
+            configuration.alpha = alpha
+
+        job_name = ''
+        if alpha is not None:
+            job_name = 'alpha' + str(alpha) 
+
+        run = wandb.init(
+                    id = run_id,
+                    # Set entity to specify your username or team name
+                    entity = "aml-2022", 
+                    # Set the project where this run will be logged
+                    project="FedMD_IID",
+                    group='MD',
+                    # Track hyperparameters and run metadata
+                    config=configuration,
+                    resume="allow")
+
+        if os.environ["WANDB_MODE"] != "offline" and not wandb.run.resumed:
+            random_number = wandb.run.name.split('-')[-1]
+            wandb.run.name = job_name + '-' + random_number
+            wandb.run.save()
+
+        return run, job_name
 
 if __name__ == "__main__":
     conf_file = parseArg()
@@ -64,6 +101,7 @@ if __name__ == "__main__":
         logits_matching_batchsize = conf_dict["logits_matching_batchsize"]
 
         result_save_dir = conf_dict["result_save_dir"]
+        args_wandb = conf_dict["args_wandb"]
 
     del conf_dict, conf_file
     
@@ -118,6 +156,8 @@ if __name__ == "__main__":
     test_dataset = (TensorDataset(torch.from_numpy(X_test_CIFAR10).float(), torch.from_numpy(y_test_CIFAR10).long()))
 
     pre_models_dir = "./pretrained_CIFAR10/"
+
+    run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb.wandb_run_id)
     parties = []
     
     #Load pre-trained models
@@ -202,3 +242,6 @@ if __name__ == "__main__":
     initialization_result = fedmd.init_result
 
     collaboration_performance = fedmd.collaborative_training(names = model_saved_names)
+
+
+    
