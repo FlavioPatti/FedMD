@@ -39,15 +39,10 @@ CANDIDATE_MODELS = {"2_layer_CNN": cnn_2layer_fc_model_cifar,
                     "resnet50": Resnet50}
 
 def init_wandb(args, alpha=None, run_id=None):
-        group_name = args.algorithm
+        
         
 
         configuration = args
-        if alpha is not None:
-            alpha = float(alpha.split('_')[1])
-            if alpha not in [0.05, 0.1, 0.2, 0.5]:
-                alpha = int(alpha)
-            configuration.alpha = alpha
 
         job_name = ''
         if alpha is not None:
@@ -157,7 +152,7 @@ if __name__ == "__main__":
 
     pre_models_dir = "./pretrained_CIFAR10/"
 
-    run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb.wandb_run_id)
+    run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'])
     parties = []
     
     #Load pre-trained models
@@ -242,6 +237,8 @@ if __name__ == "__main__":
     initialization_result = fedmd.init_result
 
     collaboration_performance = fedmd.collaborative_training(names = model_saved_names)
+
+    print(collaboration_performance)
 
 
     

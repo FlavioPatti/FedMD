@@ -120,36 +120,8 @@ class FedMD():
         test_dataset = (TensorDataset(torch.from_numpy(self.private_test_data["X"]).float(),
                                       torch.from_numpy(self.private_test_data["y"]).long()))
         collaboration_performance = {i: [] for i in range(self.N_parties)}
-
-        fig = go.Figure()
-
-        # Crea una traccia per ogni gruppo
-        trace1 = go.Scatter(x=[], y=[], mode="lines", name="Group 1")
-        trace2 = go.Scatter(x=[], y=[], mode="lines", name="Group 2")
-        trace3 = go.Scatter(x=[], y=[], mode="lines", name="Group 3")
-        trace4 = go.Scatter(x=[], y=[], mode="lines", name="Group 4")
-        trace5 = go.Scatter(x=[], y=[], mode="lines", name="Group 5")
-        trace6 = go.Scatter(x=[], y=[], mode="lines", name="Group 6")
-        trace7 = go.Scatter(x=[], y=[], mode="lines", name="Group 7")
-        trace8 = go.Scatter(x=[], y=[], mode="lines", name="Group 8")
-        trace9 = go.Scatter(x=[], y=[], mode="lines", name="Group 9")
-        trace10 = go.Scatter(x=[], y=[], mode="lines", name="Group 10")
-
-        
-
-        # Aggiungi le tracce al grafico
-        fig.add_trace(trace1)
-        fig.add_trace(trace2)
-        fig.add_trace(trace3)
-        fig.add_trace(trace4)
-        fig.add_trace(trace5)
-        fig.add_trace(trace6)
-        fig.add_trace(trace7)
-        fig.add_trace(trace8)
-        fig.add_trace(trace9)
-        fig.add_trace(trace10)
-
-        
+       
+        performance = np.zeros((3, self.N_rounds))
         r = 0
         while True:
             # At beginning of each round, generate new alignment dataset
@@ -185,11 +157,9 @@ class FedMD():
                 metrics_mean = evaluate(d["model"], private_test_dataloader, cuda = True,name = names[index])
                 collaboration_performance[index].append(metrics_mean["acc"])
 
-                fig.data[0].x = range(self.N_rounds)
-                fig.data[0].y = metrics_mean["acc"]
+                performance[d][r] = metrics_mean["acc"]
                 print(collaboration_performance[index][-1])
             
-            wandb.log({"Test accuracy": wandb.plot(fig)})
             r += 1
             if r > self.N_rounds:
                 break
@@ -224,4 +194,11 @@ class FedMD():
             # END FOR LOOP
 
         # END WHILE LOOP
+        data = [[[x for x in range(self.N_rounds)],y] for y in performance]
+        print(f'data 0: {data[0]}')
+        table = wandb.Table(data=data, columns = ["rounds", "accuracy"])
+        wandb.log(
+            {"accuracy" : wandb.plot.line(table, "rounds", "accuracy",
+        title="Custom Y vs X Line Plot")})
+        
         return collaboration_performance
