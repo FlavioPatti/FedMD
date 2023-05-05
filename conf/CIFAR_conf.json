@@ -32,7 +32,8 @@
     "N_private_training_round": 5,
     "private_training_batchsize" : 32,
     "logits_matching_batchsize": 128,
-    "result_save_dir": "./result_CIFAR_balanced/"
+    "result_save_dir": "./result_CIFAR_balanced/",
+    "args_wandb": {"wandb_run_id": None}
 }
 
 

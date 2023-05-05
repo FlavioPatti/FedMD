@@ -185,7 +185,7 @@ class FedMD():
                 metrics_mean = evaluate(d["model"], private_test_dataloader, cuda = True,name = names[index])
                 collaboration_performance[index].append(metrics_mean["acc"])
 
-                fig.data[0].x = r
+                fig.data[0].x = range(self.N_rounds)
                 fig.data[0].y = metrics_mean["acc"]
                 print(collaboration_performance[index][-1])
             
