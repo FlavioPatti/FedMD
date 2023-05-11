@@ -38,7 +38,7 @@ CANDIDATE_MODELS = {"2_layer_CNN": cnn_2layer_fc_model_cifar,
                     "resnet20_batch": Resnet20_batchNorm,
                     "resnet50": Resnet50}
 
-def init_wandb(args, alpha=None, run_id=None, N_parties = 3):
+def init_wandb(args, alpha=None, run_id=None, group = 0):
         
         
 
@@ -48,28 +48,25 @@ def init_wandb(args, alpha=None, run_id=None, N_parties = 3):
         if alpha is not None:
             job_name = 'alpha' + str(alpha) 
         
-        runs = list()
+        
 
-        for i in range(N_parties):
-
-          run = wandb.init(
-                      id = run_id,
-                      # Set entity to specify your username or team name
-                      entity = "aml-2022", 
-                      # Set the project where this run will be logged
-                      project="FedMD_IID",
-                      group=f'{i}',
-                      # Track hyperparameters and run metadata
-                      config=configuration,
-                      resume="allow")
-          runs.append(run)
+        run = wandb.init(
+                    id = run_id,
+                    # Set entity to specify your username or team name
+                    entity = "aml-2022", 
+                    # Set the project where this run will be logged
+                    project="FedMD_IID",
+                    group=f'{group}',
+                    # Track hyperparameters and run metadata
+                    config=configuration,
+                    resume="allow")
 
         if os.environ["WANDB_MODE"] != "offline" and not wandb.run.resumed:
             random_number = wandb.run.name.split('-')[-1]
             wandb.run.name = job_name + '-' + random_number
             wandb.run.save()
 
-        return runs, job_name
+        return run, job_name
 
 if __name__ == "__main__":
     conf_file = parseArg()
@@ -219,7 +216,6 @@ if __name__ == "__main__":
         X_train_CIFAR100, y_train_CIFAR100, X_test_CIFAR100, y_test_CIFAR100,
 
     #Run FedMD with public and private data on pretrained models 
-    runs, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], N_parties=len(parties))
 
     fedmd = FedMD(parties,
                        public_dataset=public_dataset,
@@ -242,9 +238,15 @@ if __name__ == "__main__":
 
     initialization_result = fedmd.init_result
 
-    collaboration_performance = fedmd.collaborative_training(names = model_saved_names, runs = runs)
+    collaboration_performance = fedmd.collaborative_training(names = model_saved_names)
 
     print(collaboration_performance)
 
+    for i in collaboration_performance:
+          
+        run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], group=i)
 
-    
+        for val in collaboration_performance[i]:
+          wandb.log({'accuracy': val})
+        
+        run.finish()

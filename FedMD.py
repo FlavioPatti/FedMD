@@ -108,7 +108,7 @@ class FedMD():
 
         # END FOR LOOP
 
-    def collaborative_training(self, names, runs):
+    def collaborative_training(self, names):
         # start collaborating training
 
         if not os.path.isdir(self.checkpoint):
@@ -156,8 +156,7 @@ class FedMD():
             for index, d in enumerate(self.collaborative_parties):
                 metrics_mean = evaluate(d["model"], private_test_dataloader, cuda = True,name = names[index])
                 collaboration_performance[index].append(metrics_mean["acc"])
-
-                runs[index].log({'accuracy': metrics_mean["acc"]})
+                
                 print(collaboration_performance[index][-1])
             
             r += 1
