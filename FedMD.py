@@ -108,7 +108,7 @@ class FedMD():
 
         # END FOR LOOP
 
-    def collaborative_training(self, names):
+    def collaborative_training(self, names, runs):
         # start collaborating training
 
         if not os.path.isdir(self.checkpoint):
@@ -121,7 +121,7 @@ class FedMD():
                                       torch.from_numpy(self.private_test_data["y"]).long()))
         collaboration_performance = {i: [] for i in range(self.N_parties)}
        
-        performance = np.zeros((3, self.N_rounds))
+       
         r = 0
         while True:
             # At beginning of each round, generate new alignment dataset
@@ -157,7 +157,7 @@ class FedMD():
                 metrics_mean = evaluate(d["model"], private_test_dataloader, cuda = True,name = names[index])
                 collaboration_performance[index].append(metrics_mean["acc"])
 
-                performance[d][r] = metrics_mean["acc"]
+                runs[index].log({'accuracy': metrics_mean["acc"]})
                 print(collaboration_performance[index][-1])
             
             r += 1
@@ -194,11 +194,6 @@ class FedMD():
             # END FOR LOOP
 
         # END WHILE LOOP
-        data = [[[x for x in range(self.N_rounds)],y] for y in performance]
-        print(f'data 0: {data[0]}')
-        table = wandb.Table(data=data, columns = ["rounds", "accuracy"])
-        wandb.log(
-            {"accuracy" : wandb.plot.line(table, "rounds", "accuracy",
-        title="Custom Y vs X Line Plot")})
-        
+       
+
         return collaboration_performance
