@@ -237,10 +237,12 @@ if __name__ == "__main__":
                        names = model_saved_names)
 
     initialization_result = fedmd.init_result
+    upper_bounds = fedmd.upper_bounds
 
     collaboration_performance = fedmd.collaborative_training(names = model_saved_names)
 
-    print(collaboration_performance)
+    print('upper bounds')
+    print(upper_bounds)
 
     for i in collaboration_performance:
           
@@ -250,3 +252,11 @@ if __name__ == "__main__":
           wandb.log({'accuracy': val})
         
         run.finish()
+    
+    for i, d in enumerate(initialization_result):
+      run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], group=f'lower_bound{i}')
+
+      for x in range(3):
+        wandb.log({'accuracy': d['val_acc']})
+      
+      run.finish()

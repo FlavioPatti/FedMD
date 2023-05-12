@@ -105,6 +105,22 @@ class FedMD():
                                      })
 
             del model_A, model_A_twin
+        
+        train_dataset = (TensorDataset(torch.from_numpy(total_private_data["X"]).float(),
+                                      torch.from_numpy(total_private_data["y"]).long()))
+        
+        self.upper_bounds = []
+        self.pooled_train_result = []
+        for model in parties:
+            model_ub = copy.deepcopy(model)
+            
+            model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_ub, train_dataset,
+                                                                               test_dataset, 25, batch_size=32, name = names[i])
+            self.upper_bounds.append(val_acc)
+            self.pooled_train_result.append({"val_acc": val_acc, 
+                                             "acc": train_acc})
+            
+            del model_ub    
 
         # END FOR LOOP
 
@@ -156,7 +172,7 @@ class FedMD():
             for index, d in enumerate(self.collaborative_parties):
                 metrics_mean = evaluate(d["model"], private_test_dataloader, cuda = True,name = names[index])
                 collaboration_performance[index].append(metrics_mean["acc"])
-                
+
                 print(collaboration_performance[index][-1])
             
             r += 1
