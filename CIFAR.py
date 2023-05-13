@@ -207,8 +207,9 @@ if __name__ == "__main__":
           model_params = item["params"]
           tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
           print("model {0} : {1}".format(i, model_saved_names[i]))
-          tmp.load_state_dict(torch.load(os.path.join(pre_models_dir, "{}.h5".format(model_saved_names[i]))))
-          parties.append(tmp)
+          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset,
+                                                                                  test_dataset,num_epochs=1, batch_size=128, name = model_saved_names[i])
+          parties.append(model_A)
 
     del model_name, model_params, tmp
 
