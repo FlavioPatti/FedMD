@@ -55,7 +55,7 @@ def init_wandb(args, alpha=None, run_id=None, group = 0):
                     # Set entity to specify your username or team name
                     entity = "aml-2022", 
                     # Set the project where this run will be logged
-                    project="FedMD_IID",
+                    project="FedMD_IID_2",
                     group=f'{group}',
                     # Track hyperparameters and run metadata
                     config=configuration,
@@ -248,8 +248,8 @@ if __name__ == "__main__":
           
         run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], group=i)
 
-        for val in collaboration_performance[i]:
-          wandb.log({'accuracy': val})
+        for i, val in enumerate(collaboration_performance[i]):
+          wandb.log({'accuracy': val, 'step': i})
         
         run.finish()
     
@@ -257,6 +257,14 @@ if __name__ == "__main__":
       run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], group=f'lower_bound{i}')
 
       for x in range(3):
-        wandb.log({'accuracy': d['val_acc']})
+        wandb.log({'accuracy': d['val_acc'], 'step': x})
+      
+      run.finish()
+    
+    for i, val in enumerate(upper_bounds):
+      run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], group=f'upper_bound{i}')
+
+      for x in [8,9,10]:
+        wandb.log({'accuracy': val, 'step': x})
       
       run.finish()
