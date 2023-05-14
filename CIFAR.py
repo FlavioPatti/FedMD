@@ -208,7 +208,7 @@ if __name__ == "__main__":
           tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
           print("model {0} : {1}".format(i, model_saved_names[i]))
           model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset,
-                                                                                  test_dataset,num_epochs=1, batch_size=128, name = model_saved_names[i])
+                                                                                  test_dataset,num_epochs=10, batch_size=128, name = model_saved_names[i])
           parties.append(model_A)
 
     del model_name, model_params, tmp
