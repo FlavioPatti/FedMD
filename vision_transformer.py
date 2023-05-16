@@ -6,6 +6,7 @@ from __future__ import print_function
 import copy
 import logging
 import math
+import ml_collections
 
 from os.path import join as pjoin
 
@@ -17,7 +18,7 @@ from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNo
 from torch.nn.modules.utils import _pair
 from scipy import ndimage
 
-import configs
+import cifar100.configs as configs
 
 #from .modeling_resnet import ResNetV2
 
@@ -336,12 +337,55 @@ class VisionTransformer(nn.Module):
                         unit.load_from(weights, n_block=bname, n_unit=uname)
 
 
+
+def get_vitB_config():
+    """Returns the ViT-B with 8x8 patches."""
+    config = ml_collections.ConfigDict()
+    config.patches = ml_collections.ConfigDict({'size': (8, 8)})
+    config.hidden_size = 768
+    config.transformer = ml_collections.ConfigDict()
+    config.transformer.mlp_dim = 3072
+    config.transformer.num_heads = 12
+    config.transformer.num_layers = 12
+    config.transformer.attention_dropout_rate = 0.0
+    config.transformer.dropout_rate = 0.1
+    config.classifier = 'token'
+    config.representation_size = None
+    return config
+
+def get_vitL_config():
+    """Returns the ViT-L with 8x8 patches."""
+    config = ml_collections.ConfigDict()
+    config.patches = ml_collections.ConfigDict({'size': (8, 8)})
+    config.hidden_size = 1024
+    config.transformer = ml_collections.ConfigDict()
+    config.transformer.mlp_dim = 4096
+    config.transformer.num_heads = 16
+    config.transformer.num_layers = 24
+    config.transformer.attention_dropout_rate = 0.0
+    config.transformer.dropout_rate = 0.1
+    config.classifier = 'token'
+    config.representation_size = None
+    return config
+
+def get_vitS_config():
+    """Returns the ViT-S with 8x8 patches."""
+    config = ml_collections.ConfigDict()
+    config.patches = ml_collections.ConfigDict({'size': (8, 8)})
+    config.hidden_size = 384
+    config.transformer = ml_collections.ConfigDict()
+    config.transformer.mlp_dim = 1536
+    config.transformer.num_heads = 6
+    config.transformer.num_layers = 12
+    config.transformer.attention_dropout_rate = 0.0
+    config.transformer.dropout_rate = 0.1
+    config.classifier = 'token'
+    config.representation_size = None
+    return config
+
+
 CONFIGS = {
-    'ViT-B_16': configs.get_b16_config(),
-    'ViT-B_32': configs.get_b32_config(),
-    'ViT-L_16': configs.get_l16_config(),
-    'ViT-L_32': configs.get_l32_config(),
-    'ViT-H_14': configs.get_h14_config(),
-    'R50-ViT-B_16': configs.get_r50_b16_config(),
-    'testing': configs.get_testing(),
+    'ViT-S': get_vitS_config(),
+    'ViT-B': get_vitB_config(),
+    'ViT-L': get_vitL_config()
 }

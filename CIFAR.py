@@ -6,11 +6,11 @@ import numpy as np
 from torch.utils.data import TensorDataset
 from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_dirc_private_data
 from FedMD import FedMD
-from utils.Neural_Networks import cnn_2layer_fc_model_cifar, cnn_3layer_fc_model_cifar, train_and_eval
+from utils.Neural_Networks import cnn_2layers, cnn_3layers, train_and_eval
 from utils.Resnet20Batch import Resnet20_batchNorm
 from utils.Resnet20Group import Resnet20_groupNorm
 from utils.Resnet50 import Resnet50
-from modeling import VisionTransformer, CONFIGS
+from vision_transformer import VisionTransformer, CONFIGS
 import wandb
 
 os.environ["WANDB_API_KEY"] = "a4771dae610ad0306d4c407ecca287079d83d0d9"
@@ -32,11 +32,18 @@ def parseArg():
     return conf_file
 
 
-CANDIDATE_MODELS = {"2_layer_CNN": cnn_2layer_fc_model_cifar,
-                    "3_layer_CNN": cnn_3layer_fc_model_cifar,
+CANDIDATE_MODELS = {"2_layer_CNN": cnn_2layers,
+                    "3_layer_CNN": cnn_3layers,
                     "resnet20_group": Resnet20_groupNorm,
                     "resnet20_batch": Resnet20_batchNorm,
                     "resnet50": Resnet50}
+
+def save_checkpoint_pretrain(state, filename1="checkpoint_model_pretrain"):
+  print("=> Saving checkpoint")
+  filename = 'checkpoint/'+ filename1
+  torch.save(state,filename)
+
+
 
 def init_wandb(args, alpha=None, run_id=None, group = 0):
         
@@ -173,7 +180,8 @@ if __name__ == "__main__":
           tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
           print("model {0} : {1}".format(i, model_saved_names[i]))
           model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset, 
-                                                                              test_dataset,num_epochs=1, batch_size=128, name = model_saved_names[i]) #20 epoche
+                                                                              test_dataset,num_epochs=20, batch_size=128, name = model_saved_names[i]) #20 epoche
+          
           parties.append(model_A)
 
         elif model_saved_names[i]=='RESNET50':
@@ -182,25 +190,34 @@ if __name__ == "__main__":
           client_model = Resnet50(n_classes)
           print("model {0} : {1}".format(i, model_saved_names[i]))
           model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
-                                                                                  test_dataset,num_epochs=1, batch_size=128, name = model_saved_names[i])
+                                                                                  test_dataset,num_epochs=20, batch_size=128, name = model_saved_names[i])
+          parties.append(model_A)
+
+        elif model_saved_names[i]=="VIT_S":
+          config = CONFIGS['ViT-S']
+          client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
+          client_model.device = 'cuda'
+          print("model {0} : {1}".format(i, model_saved_names[i]))
+          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
+                                                                                  test_dataset,num_epochs=20, batch_size=512, name = model_saved_names[i])
           parties.append(model_A)
 
         elif model_saved_names[i]=="VIT_B":
-          config = CONFIGS['ViT-B_32']
+          config = CONFIGS['ViT-B']
           client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
           client_model.device = 'cuda'
           print("model {0} : {1}".format(i, model_saved_names[i]))
           model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
-                                                                                  test_dataset,num_epochs=1, batch_size=512, name = model_saved_names[i])
+                                                                                  test_dataset,num_epochs=20, batch_size=512, name = model_saved_names[i])
           parties.append(model_A)
 
         elif model_saved_names[i]=="VIT_L":
-          config = CONFIGS['ViT-L_32']
+          config = CONFIGS['ViT-L']
           client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
           client_model.device = 'cuda'
           print("model {0} : {1}".format(i, model_saved_names[i]))
           model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
-                                                                                  test_dataset,num_epochs=1, batch_size=512, name = model_saved_names[i])
+                                                                                  test_dataset,num_epochs=20, batch_size=512, name = model_saved_names[i])
           parties.append(model_A)
         else:
           model_name = item["model_type"]
@@ -208,8 +225,12 @@ if __name__ == "__main__":
           tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
           print("model {0} : {1}".format(i, model_saved_names[i]))
           model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset,
-                                                                                  test_dataset,num_epochs=10, batch_size=128, name = model_saved_names[i])
+                                                                                  test_dataset,num_epochs=20, batch_size=128, name = model_saved_names[i])
           parties.append(model_A)
+
+        save_checkpoint_pretrain({'state_dict': model_A.state_dict()}, filename1=model_saved_names[i])
+        
+        
 
     del model_name, model_params, tmp
 
