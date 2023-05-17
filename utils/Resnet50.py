@@ -81,15 +81,17 @@ class Block(nn.Module):
       return x
 
 
-class ResNet(nn.Module):
-    def __init__(self, ResBlock, layer_list, num_classes, num_channels=3):
-        super(ResNet, self).__init__()
+class ResNet50(nn.Module):
+    def __init__(self, layer_list, n_classes, num_channels=3):
+        super(ResNet50, self).__init__()
         self.in_channels = 64
-        
+        ResBlock = Bottleneck
+
         self.conv1 = nn.Conv2d(num_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.batch_norm1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
         self.max_pool = nn.MaxPool2d(kernel_size = 3, stride=2, padding=1)
+
         
         self.layer1 = self._make_layer(ResBlock, layer_list[0], planes=64)
         self.layer2 = self._make_layer(ResBlock, layer_list[1], planes=128, stride=2)
@@ -97,7 +99,7 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(ResBlock, layer_list[3], planes=512, stride=2)
         
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
-        self.fc = nn.Linear(512*ResBlock.expansion, num_classes)
+        self.fc = nn.Linear(512*ResBlock.expansion, n_classes)
         
     def forward(self, x):
         x = self.relu(self.batch_norm1(self.conv1(x)))
@@ -132,5 +134,5 @@ class ResNet(nn.Module):
             
         return nn.Sequential(*layers)
 
-def Resnet50(num_classes, channels=3):
-    return ResNet(Bottleneck, [3,4,6,3], num_classes, channels)
+# def Resnet50(num_classes, channels=3):
+#     return ResNet(Bottleneck, [3,4,6,3], num_classes, channels)

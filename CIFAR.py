@@ -6,10 +6,10 @@ import numpy as np
 from torch.utils.data import TensorDataset
 from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_dirc_private_data
 from FedMD import FedMD
-from utils.Neural_Networks import cnn_2layers, cnn_3layers, train_and_eval
+from utils.Neural_Networks import cnn_2layers, cnn_3layers, train_and_eval, evaluate
 from utils.Resnet20Batch import Resnet20_batchNorm
 from utils.Resnet20Group import Resnet20_groupNorm
-from utils.Resnet50 import Resnet50
+from utils.Resnet50 import ResNet50
 from vision_transformer import VisionTransformer, CONFIGS
 import wandb
 
@@ -36,7 +36,7 @@ CANDIDATE_MODELS = {"2_layer_CNN": cnn_2layers,
                     "3_layer_CNN": cnn_3layers,
                     "resnet20_group": Resnet20_groupNorm,
                     "resnet20_batch": Resnet20_batchNorm,
-                    "resnet50": Resnet50}
+                    "resnet50": ResNet50}
 
 def save_checkpoint_pretrain(state, filename1="checkpoint_model_pretrain"):
   print("=> Saving checkpoint")
@@ -169,70 +169,60 @@ if __name__ == "__main__":
     #Model 5: our implementation of ResNet20 with group norm
     #Model 6: out implementation of ResNet20 with batch norm
     #Model 7: ResNet50
-    #Model 8: vit-base
-    #Model 9: vit-large
+    #Model 8: vit-small
+    #Model 9: vit-base 
     
     for i, item in enumerate(model_config):
-        
-        if model_saved_names[i] == 'RESNET20_G' or model_saved_names[i] == 'RESNET20_B':
-          model_name = item["model_type"]
-          model_params = item["params"]
-          tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
-          print("model {0} : {1}".format(i, model_saved_names[i]))
-          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset, 
-                                                                              test_dataset,num_epochs=20, batch_size=128, name = model_saved_names[i]) #20 epoche
-          
-          parties.append(model_A)
 
-        elif model_saved_names[i]=='RESNET50':
-          model_name = item["model_type"]
-          model_params = item["params"]
-          client_model = Resnet50(n_classes)
-          print("model {0} : {1}".format(i, model_saved_names[i]))
-          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
-                                                                                  test_dataset,num_epochs=20, batch_size=128, name = model_saved_names[i])
-          parties.append(model_A)
-
-        elif model_saved_names[i]=="VIT_S":
-          config = CONFIGS['ViT-S']
+        if model_saved_names[i].startswith('ViT'):
+          config = CONFIGS[model_saved_names[i]]
           client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
           client_model.device = 'cuda'
           print("model {0} : {1}".format(i, model_saved_names[i]))
-          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
-                                                                                  test_dataset,num_epochs=20, batch_size=512, name = model_saved_names[i])
-          parties.append(model_A)
 
-        elif model_saved_names[i]=="VIT_B":
-          config = CONFIGS['ViT-B']
-          client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
-          client_model.device = 'cuda'
-          print("model {0} : {1}".format(i, model_saved_names[i]))
-          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
-                                                                                  test_dataset,num_epochs=20, batch_size=512, name = model_saved_names[i])
-          parties.append(model_A)
+          try:
+            checkpoint1 = torch.load('checkpoint/' + model_saved_names[i])
+            client_model.load_state_dict(checkpoint1['state_dict'])
 
-        elif model_saved_names[i]=="VIT_L":
-          config = CONFIGS['ViT-L']
-          client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)
-          client_model.device = 'cuda'
-          print("model {0} : {1}".format(i, model_saved_names[i]))
-          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
+            eval_metrics = evaluate(client_model, test_dataset, cuda = True, name = model_saved_names[i])
+            print('checkpoint loaded: ')
+            print(f"acc: {eval_metrics['acc']}")
+            print(f"loss: {eval_metrics['loss']}")
+
+          except:
+            client_model, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
                                                                                   test_dataset,num_epochs=20, batch_size=512, name = model_saved_names[i])
-          parties.append(model_A)
+            save_checkpoint_pretrain({'state_dict': client_model.state_dict()}, filename1=model_saved_names[i])
+            
+          parties.append(client_model)
+
         else:
           model_name = item["model_type"]
           model_params = item["params"]
-          tmp = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
+          client_model = CANDIDATE_MODELS[model_name](n_classes=n_classes, **model_params)
           print("model {0} : {1}".format(i, model_saved_names[i]))
-          model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(tmp, train_dataset,
+
+          try:
+            checkpoint1 = torch.load('checkpoint/' + model_saved_names[i])
+            client_model.load_state_dict(checkpoint1['state_dict'])
+
+            eval_metrics = evaluate(client_model, test_dataset, cuda = True, name = model_saved_names[i])
+            print('checkpoint loaded: ')
+            print(f"acc: {eval_metrics['acc']}")
+            print(f"loss: {eval_metrics['loss']}")
+
+          except:
+            client_model, train_acc, train_loss, val_acc, val_loss = train_and_eval(client_model, train_dataset,
                                                                                   test_dataset,num_epochs=20, batch_size=128, name = model_saved_names[i])
-          parties.append(model_A)
+            save_checkpoint_pretrain({'state_dict': client_model.state_dict()}, filename1=model_saved_names[i])
 
-        save_checkpoint_pretrain({'state_dict': model_A.state_dict()}, filename1=model_saved_names[i])
+          parties.append(client_model)
+
         
         
+        
 
-    del model_name, model_params, tmp
+    del model_name, model_params, client_model
 
     del X_train_CIFAR10, y_train_CIFAR10, X_test_CIFAR10, y_test_CIFAR10, \
         X_train_CIFAR100, y_train_CIFAR100, X_test_CIFAR100, y_test_CIFAR100,
