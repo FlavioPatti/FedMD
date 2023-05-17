@@ -314,7 +314,7 @@ def cnn_3layers(n_classes, n1=128, n2=192, n3=256, dropout_rate=0.2, input_shape
 
 
 
-def train_epoch(model, data_loader, cuda=True, lr=0.001,batch_size=128,loss_fn = nn.CrossEntropyLoss(),weight_decay=1e-3, name = 'model_name', epochs = 25, optim = None ):
+def train_epoch(model, data_loader, cuda=True, lr=0.001,batch_size=128,loss_fn = nn.CrossEntropyLoss(),weight_decay=1e-3, name = 'model_name', epochs = 25, optim = None, tqdm = True):
     
 
     loss_fn = loss_fn
@@ -328,7 +328,7 @@ def train_epoch(model, data_loader, cuda=True, lr=0.001,batch_size=128,loss_fn =
 
     data_loader=DataLoader(data_loader,batch_size=batch_size,shuffle=True)
 
-    with tqdm(total=len(data_loader),disable= False) as t:  # Use tqdm for progress bar
+    with tqdm(total=len(data_loader),disable= not tqdm) as t:  # Use tqdm for progress bar
 
         for i, (train_batch, labels_batch) in enumerate(data_loader):
 
@@ -356,7 +356,7 @@ def train_epoch(model, data_loader, cuda=True, lr=0.001,batch_size=128,loss_fn =
             t.update()
 
 
-def train(model, data_loader, epochs, cuda=True, lr=0.001,batch_size=128,loss_fn = nn.CrossEntropyLoss(),weight_decay=1e-3, name = 'model_name'):
+def train(model, data_loader, epochs, cuda=True, lr=0.001,batch_size=128,loss_fn = nn.CrossEntropyLoss(),weight_decay=1e-3, name = 'model_name', tdqm = True):
     if name == 'RESNET20':
         optim = SGD(model.parameters(), lr=0.1, weight_decay=weight_decay)
         scheduler = lr_scheduler.CosineAnnealingLR(optim, T_max=epochs, eta_min=0.00001)
@@ -367,7 +367,7 @@ def train(model, data_loader, epochs, cuda=True, lr=0.001,batch_size=128,loss_fn
         # ********************* one full pass over the training set *********************
         if name == 'RESNET20':
             print('Starting epoch {}/{}, LR = {}'.format(epoch+1, epochs, scheduler.get_last_lr()))
-        train_epoch(model, data_loader, lr=lr,cuda=cuda, batch_size=batch_size,loss_fn = loss_fn,weight_decay=weight_decay, name = name, epochs = epochs, optim = optim)
+        train_epoch(model, data_loader, lr=lr,cuda=cuda, batch_size=batch_size,loss_fn = loss_fn,weight_decay=weight_decay, name = name, epochs = epochs, optim = optim, tdqm = tdqm)
         if name == 'RESNET20':
             scheduler.step()
 
@@ -409,10 +409,10 @@ def evaluate(model, data_loader, cuda, name):
     metrics_mean = {metric: np.mean([x[metric] for x in summ]) for metric in summ[0]}
     return metrics_mean
 
-def train_and_eval(model, train_loader, dev_loader, num_epochs,batch_size,lr=0.001,weight_decay=0.001, name = 'model_name'):
+def train_and_eval(model, train_loader, dev_loader, num_epochs,batch_size,lr=0.001,weight_decay=0.001, name = 'model_name', tdqm = True):
 
 
-    model_trained=train(model,train_loader,epochs=num_epochs,lr=lr,batch_size=batch_size,weight_decay=weight_decay, name = name)
+    model_trained=train(model,train_loader,epochs=num_epochs,lr=lr,batch_size=batch_size,weight_decay=weight_decay, name = name, tdqm=tdqm)
 
     # ********************* Evaluate for one epoch on training and validation set *********************
     val_metrics = evaluate(model_trained, dev_loader, cuda=True, name = name)     # {'acc':acc, 'loss':loss}

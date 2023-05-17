@@ -81,10 +81,10 @@ class FedMD():
         test_dataset = (TensorDataset(torch.from_numpy(private_test_data["X"]).float(),
                                       torch.from_numpy(private_test_data["y"]).long()))
         for i in range(self.N_parties):
-            #print("model ", i)
+            print("model: ", names[i])
             model_A_twin = copy.deepcopy(parties[i])
 
-            print("start full stack training ... ")
+            print("init values:  ")
             # get train_loader and test_loader
             train_dataset = (TensorDataset(torch.from_numpy(private_data[i]["X"]).float(),
                                            torch.from_numpy(private_data[i]["y"]).long()))
@@ -92,9 +92,9 @@ class FedMD():
             #print(f"len train = {len(train_dataset)}") 300
             #print(f"len test = {len(test_dataset)}")  600
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_A_twin, train_dataset,
-                                                                               test_dataset, 25, batch_size=32, name = names[i])
+                                                                               test_dataset, 25, batch_size=32, name = names[i], tdqm=False)
 
-            print("full stack training done")
+            print("full stack training done\n\n")
 
             self.collaborative_parties.append({"model": model_A})
 
@@ -109,11 +109,14 @@ class FedMD():
         train_dataset = (TensorDataset(torch.from_numpy(total_private_data["X"]).float(),
                                       torch.from_numpy(total_private_data["y"]).long()))
         
+        print("calculate the theoretical upper bounds for participants: ")
         self.upper_bounds = []
         self.pooled_train_result = []
-        for model in parties:
-            model_ub = copy.deepcopy(model)
-            
+        for i in range(self.N_parties):
+            model_ub = copy.deepcopy(names[i])
+
+            print("model: ", names[i])
+            print("UB values:  ")
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_ub, train_dataset,
                                                                                test_dataset, 25, batch_size=32, name = names[i])
             self.upper_bounds.append(val_acc)
@@ -122,11 +125,13 @@ class FedMD():
             
             del model_ub    
 
+        print('end upper bounds phase.. ')
         # END FOR LOOP
 
     def collaborative_training(self, names):
         # start collaborating training
 
+        print('start collaborative training')
         if not os.path.isdir(self.checkpoint):
             mkdir_p(self.checkpoint)
 
