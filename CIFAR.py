@@ -184,7 +184,9 @@ if __name__ == "__main__":
             checkpoint1 = torch.load('checkpoint/' + model_saved_names[i])
             client_model.load_state_dict(checkpoint1['state_dict'])
 
-            eval_metrics = evaluate(client_model, test_dataset, cuda = True, name = model_saved_names[i])
+            device = torch.device("cuda:0")
+            
+            eval_metrics = evaluate(client_model.to(device), test_dataset, cuda = True, name = model_saved_names[i])
             print('checkpoint loaded: ')
             print(f"acc: {eval_metrics['acc']}")
             print(f"loss: {eval_metrics['loss']}")
