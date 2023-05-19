@@ -29,9 +29,9 @@
     "manualseed": 82,
     "checkpoint": "checkpoint2/ablation_study/E5/alpha1/cifar10/seed5",
     "N_logits_matching_round": 1, 
-    "N_private_training_round": 5,
-    "private_training_batchsize" : 32,
-    "logits_matching_batchsize": 128,
+    "N_private_training_round": 4,
+    "private_training_batchsize" : 5,
+    "logits_matching_batchsize": 256,
     "result_save_dir": "./result_CIFAR_balanced/",
     "args_wandb": {"wandb_run_id": None}
 }

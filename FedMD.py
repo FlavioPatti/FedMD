@@ -8,8 +8,6 @@ import torch.nn as nn
 from utils.Sia import SIA
 from utils.logger import Logger, mkdir_p
 import os
-import wandb
-import plotly.graph_objs as go
 
 def get_logits(model, data_loader, names, cuda):
     model.eval()
@@ -24,7 +22,7 @@ def get_logits(model, data_loader, names, cuda):
                 data_batch = data_batch.cuda()  # (B,3,32,32)
 
             # compute model output
-            if names == "VIT_B" or names == "VIT_L":
+            if names.startswith('ViT'):
               output_batch = model(data_batch)[0]
             else:
               output_batch = model(data_batch)
@@ -46,26 +44,22 @@ def get_logits(model, data_loader, names, cuda):
 class FedMD():
     def __init__(self, parties, public_dataset,
                  private_data, total_private_data,
-                 private_test_data, source_data, total_source_data, N_alignment,
+                 private_test_data, N_alignment,
                  N_rounds,
-                 alpha,
                  manualseed,
                  checkpoint,
                  model_saved_name,
                  N_logits_matching_round, logits_matching_batchsize,
                  N_private_training_round, private_training_batchsize,
                  names):
-        self.alpha = alpha
         self.N_parties = len(parties)
         self.public_dataset = public_dataset
         self.model_saved_name = model_saved_name
         self.private_data = private_data
         self.private_test_data = private_test_data
         self.total_private_data = total_private_data
-        self.source_data = source_data
         self.checkpoint = checkpoint
         self.manualseed = manualseed
-        self.total_source_data = total_source_data
         self.N_alignment = N_alignment
 
         self.N_rounds = N_rounds
@@ -77,7 +71,9 @@ class FedMD():
         self.collaborative_parties = []
         self.init_result = []
 
-        print("start model initialization: ")
+        print('\n **************************************************************************** \n')
+        print("start model initialization: \n")
+
         test_dataset = (TensorDataset(torch.from_numpy(private_test_data["X"]).float(),
                                       torch.from_numpy(private_test_data["y"]).long()))
         for i in range(self.N_parties):
@@ -92,7 +88,7 @@ class FedMD():
             #print(f"len train = {len(train_dataset)}") 300
             #print(f"len test = {len(test_dataset)}")  600
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_A_twin, train_dataset,
-                                                                               test_dataset, 25, batch_size=32, name = names[i], tdqm=False)
+                                                                               test_dataset, 25, batch_size=32, name = names[i], tqdm_v=False)
 
             print("full stack training done\n\n")
 
@@ -109,19 +105,24 @@ class FedMD():
         train_dataset = (TensorDataset(torch.from_numpy(total_private_data["X"]).float(),
                                       torch.from_numpy(total_private_data["y"]).long()))
         
-        print("calculate the theoretical upper bounds for participants: ")
+
+        print('**************************************************************************** \n')
+        print("calculate the theoretical upper bounds for participants: \n")
+
         self.upper_bounds = []
         self.pooled_train_result = []
         for i in range(self.N_parties):
-            model_ub = copy.deepcopy(names[i])
+            model_ub = copy.deepcopy(parties[i])
 
             print("model: ", names[i])
             print("UB values:  ")
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_ub, train_dataset,
-                                                                               test_dataset, 25, batch_size=32, name = names[i])
+                                                                               test_dataset, 25, batch_size=32, name = names[i], tqdm_v = False)
             self.upper_bounds.append(val_acc)
             self.pooled_train_result.append({"val_acc": val_acc, 
                                              "acc": train_acc})
+            
+            print('\n')
             
             del model_ub    
 

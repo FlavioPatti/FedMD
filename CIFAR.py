@@ -4,7 +4,7 @@ import sys
 import torch
 import numpy as np
 from torch.utils.data import TensorDataset
-from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_dirc_private_data
+from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_bal_private_data
 from FedMD import FedMD
 from utils.Neural_Networks import cnn_2layers, cnn_3layers, train_and_eval, evaluate
 from utils.Resnet20Batch import Resnet20_batchNorm
@@ -62,7 +62,7 @@ def init_wandb(args, alpha=None, run_id=None, group = 0):
                     # Set entity to specify your username or team name
                     entity = "aml-2022", 
                     # Set the project where this run will be logged
-                    project="FedMD_IID_2",
+                    project="FedMD_IID_5",
                     group=f'{group}',
                     # Track hyperparameters and run metadata
                     config=configuration,
@@ -140,13 +140,12 @@ if __name__ == "__main__":
 
     mod_private_classes = np.arange(len(private_classes)) + len(public_classes)  # [10,11,12,13,14,15]
 
-    private_data, total_private_data, source_data, total_source_data \
-        = generate_dirc_private_data(X_train_CIFAR100, y_train_CIFAR100,
-                                     alpha=alpha,
-                                     N_parties=N_parties,
-                                     classes_in_use=mod_private_classes,
-                                     num_source_samples=100,
-                                     manualseed=manualseed)
+    private_data, total_private_data\
+    =generate_bal_private_data(X_train_CIFAR100, y_train_CIFAR100,      
+                               N_parties = N_parties,           
+                               classes_in_use = mod_private_classes, 
+                               N_samples_per_class = N_samples_per_class, 
+                               data_overlap = False)
 
     X_tmp, y_tmp = generate_partial_data(X=X_test_CIFAR100, y=y_test_CIFAR100,
                                          class_in_use=mod_private_classes,
@@ -208,7 +207,9 @@ if __name__ == "__main__":
             checkpoint1 = torch.load('checkpoint/' + model_saved_names[i])
             client_model.load_state_dict(checkpoint1['state_dict'])
 
-            eval_metrics = evaluate(client_model, test_dataset, cuda = True, name = model_saved_names[i])
+            device = torch.device("cuda:0")
+       
+            eval_metrics = evaluate(client_model.to(device), test_dataset, cuda = True, name = model_saved_names[i])
             print('checkpoint loaded: ')
             print(f"acc: {eval_metrics['acc']}")
             print(f"loss: {eval_metrics['loss']}")
@@ -234,14 +235,11 @@ if __name__ == "__main__":
     fedmd = FedMD(parties,
                        public_dataset=public_dataset,
                        private_data=private_data,
-                       alpha=alpha,
                        model_saved_name=model_saved_names,
                        total_private_data=total_private_data,
                        private_test_data=private_test_data,
-                       source_data=source_data,
                        manualseed=manualseed,
                        checkpoint=checkpoint,
-                       total_source_data=total_source_data,
                        N_rounds=N_rounds,
                        N_alignment=N_alignment,
                        N_logits_matching_round=N_logits_matching_round,
@@ -263,7 +261,7 @@ if __name__ == "__main__":
         run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], group=i)
 
         for i, val in enumerate(collaboration_performance[i]):
-          wandb.log({'accuracy': val, 'step': i})
+          wandb.log({'accuracy2': val, 'step2': i})
         
         run.finish()
     
@@ -271,14 +269,14 @@ if __name__ == "__main__":
       run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], group=f'lower_bound{i}')
 
       for x in range(3):
-        wandb.log({'accuracy': d['val_acc'], 'step': x})
+        wandb.log({'accuracy2': d['val_acc'], 'step2': x})
       
       run.finish()
     
     for i, val in enumerate(upper_bounds):
       run, job_name = init_wandb(args_wandb, alpha, run_id=args_wandb['wandb_run_id'], group=f'upper_bound{i}')
 
-      for x in [8,9,10]:
-        wandb.log({'accuracy': val, 'step': x})
+      for x in [18,19,20]:
+        wandb.log({'accuracy2': val, 'step2': x})
       
       run.finish()
