@@ -224,7 +224,7 @@ if __name__ == "__main__":
         
         
 
-    del model_name, model_params, client_model
+    del model_params, client_model
 
     del X_train_CIFAR10, y_train_CIFAR10, X_test_CIFAR10, y_test_CIFAR10, \
         X_train_CIFAR100, y_train_CIFAR100, X_test_CIFAR100, y_test_CIFAR100,
