@@ -117,7 +117,7 @@ class FedMD():
             print("model: ", names[i])
             print("UB values:  ")
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_ub, train_dataset,
-                                                                               test_dataset, 25, batch_size=32, name = names[i], tqdm_v = False)
+                                                                               test_dataset, 50, batch_size=32, name = names[i], tqdm_v = False)
             self.upper_bounds.append(val_acc)
             self.pooled_train_result.append({"val_acc": val_acc, 
                                              "acc": train_acc})

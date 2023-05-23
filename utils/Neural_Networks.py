@@ -365,8 +365,8 @@ def train(model, data_loader, epochs, cuda=True, lr=0.001,batch_size=128,loss_fn
 
     for epoch in range(epochs):
         # ********************* one full pass over the training set *********************
-        if name.startswith('RESNET'):
-            print('Starting epoch {}/{}, LR = {}'.format(epoch+1, epochs, scheduler.get_last_lr()))
+        # if name.startswith('RESNET'):
+        #     print('Starting epoch {}/{}, LR = {}'.format(epoch+1, epochs, scheduler.get_last_lr()))
         train_epoch(model, data_loader, lr=lr,cuda=cuda, batch_size=batch_size,loss_fn = loss_fn,weight_decay=weight_decay, name = name, epochs = epochs, optim = optim, tqdm_v = tqdm_v)
         if name.startswith('RESNET'):
             scheduler.step()

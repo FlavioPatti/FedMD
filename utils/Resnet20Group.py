@@ -21,7 +21,7 @@ def _weights_init(m):
     classname = m.__class__.__name__
     #print(classname)
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
-        init.kaiming_normal_(m.weight)
+        init.kaiming_normal_(m.weight, nonlinearity='relu')
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -73,6 +73,7 @@ class Resnet20_groupNorm(nn.Module):
       self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
       self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
       self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
+      self.avgpool = nn.AvgPool2d(kernel_size=(8,8), stride=(1,1))
       self.linear = nn.Linear(64, n_classes)
 
       self.apply(_weights_init)
