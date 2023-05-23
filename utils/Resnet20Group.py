@@ -13,7 +13,7 @@ from torch.optim import SGD, Adam, lr_scheduler
 import os
 
 
-NUM_GROUP = 8
+NUM_GROUP = 2
 # GroupNorm takes number of groups to divide the channels in and the number of channels to expect
 # in the input. 
 

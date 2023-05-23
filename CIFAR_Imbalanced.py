@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from torch.utils.data import TensorDataset
-from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_bal_private_data
+from utils.data_utils import load_CIFAR_data, generate_partial_data, generate_imbal_CIFAR_private_data
 from FedMD import FedMD
 from utils.Neural_Networks import cnn_2layers, cnn_3layers, train_and_eval, evaluate
 from utils.Resnet20Batch import Resnet20_batchNorm
@@ -122,40 +122,60 @@ if __name__ == "__main__":
     X_train_CIFAR100, y_train_CIFAR100, X_test_CIFAR100, y_test_CIFAR100 \
         = load_CIFAR_data(data_type="CIFAR100",
                           standarized=True, verbose=True)
+    
+    a_, y_train_super, b_, y_test_super \
+    = load_CIFAR_data(data_type="CIFAR100", label_mode="coarse",
+                      standarized = True, verbose = True)
+    
+    del a_, b_
 
-    # only use those CIFAR100 data whose y_labels belong to private_classes
-    X_train_CIFAR100, y_train_CIFAR100 \
-        = generate_partial_data(X=X_train_CIFAR100, y=y_train_CIFAR100,
-                                class_in_use=private_classes,
-                                verbose=True)
+    #Find the relations between superclasses and subclasses
 
-    X_test_CIFAR100, y_test_CIFAR100 \
-        = generate_partial_data(X=X_test_CIFAR100, y=y_test_CIFAR100,
-                                class_in_use=private_classes,
-                                verbose=True)
+    relations = [set() for i in range(np.max(y_train_super)+1)]
+    for i, y_fine in enumerate(y_train_CIFAR100):
+        relations[y_train_super[i]].add(y_fine)
+    for i in range(len(relations)):
+        relations[i]=list(relations[i])
+    
+    del i, y_fine
 
+    fine_classes_in_use = [[relations[j][i%5] for j in private_classes] 
+                           for i in range(N_parties)]
+    print(fine_classes_in_use)
+    
+    #Generate test set
+    X_tmp, y_tmp = generate_partial_data(X_test_CIFAR100, y_test_super,
+                                         class_in_use = private_classes,
+                                         verbose = True)
+    
     # relabel the selected CIFAR100 data for future convenience
-    for index, cls_ in enumerate(private_classes):
-        y_train_CIFAR100[y_train_CIFAR100 == cls_] = index + len(public_classes)
-        y_test_CIFAR100[y_test_CIFAR100 == cls_] = index + len(public_classes)
+    for index in range(len(private_classes)-1, -1, -1):
+        cls_ = private_classes[index]
+        y_tmp[y_tmp == cls_] = index + len(public_classes)
+    #print(pd.Series(y_tmp).value_counts())    
+    private_test_data = {"X": X_tmp, "y": y_tmp}
+    del index, cls_, X_tmp, y_tmp
+    print("="*60)
+
+    
+    #generate private data
+    private_data, total_private_data \
+    = generate_imbal_CIFAR_private_data(X_train_CIFAR100, y_train_CIFAR100, y_train_super,   
+                                        N_parties = N_parties,   
+                                        classes_per_party = fine_classes_in_use,
+                                        samples_per_class = N_samples_per_class)
+    
+    for index in range(len(private_classes)-1, -1, -1):
+        cls_ = private_classes[index]
+        total_private_data["y"][total_private_data["y"] == cls_] = index + len(public_classes)
+        for i in range(N_parties):
+            private_data[i]["y"][private_data[i]["y"] == cls_] = index + len(public_classes)
+    
     del index, cls_
 
-    print(pd.Series(y_train_CIFAR100).value_counts())
-    mod_private_classes = np.arange(len(private_classes)) + len(public_classes)  # [10,11,12,13,14,15]
+    mod_private_classes = np.arange(len(private_classes)) + len(public_classes)    
+    print("=" * 60)    
 
-    private_data, total_private_data\
-    =generate_bal_private_data(X_train_CIFAR100, y_train_CIFAR100,      
-                               N_parties = N_parties,           
-                               classes_in_use = mod_private_classes, 
-                               N_samples_per_class = N_samples_per_class, 
-                               data_overlap = False)
-
-    X_tmp, y_tmp = generate_partial_data(X=X_test_CIFAR100, y=y_test_CIFAR100,
-                                         class_in_use=mod_private_classes,
-                                         verbose=True)
-    private_test_data = {"X": X_tmp, "y": y_tmp}
-
-    del X_tmp, y_tmp
 
     # convert dataset to train_loader and test_loader
     train_dataset = (TensorDataset(torch.from_numpy(X_train_CIFAR10).float(), torch.from_numpy(y_train_CIFAR10).long()))
