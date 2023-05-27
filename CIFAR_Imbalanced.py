@@ -25,7 +25,7 @@ def parseArg():
                         help='the config file for FedMD.'
                         )
 
-    conf_file = os.path.abspath("conf/CIFAR_conf.json")
+    conf_file = os.path.abspath("conf/CIFAR_imbalance_conf.json")
 
     if len(sys.argv) > 1:
         args = parser.parse_args(sys.argv[1:])
@@ -114,22 +114,21 @@ if __name__ == "__main__":
     # Load public and private datasets
     
     X_train_CIFAR10, y_train_CIFAR10, X_test_CIFAR10, y_test_CIFAR10 \
-        = load_CIFAR_data(data_type="CIFAR10",
-                          standarized=True, verbose=True)
-
+    = load_CIFAR_data(data_type="CIFAR10", 
+                      standarized = True, verbose = True)
+    
     public_dataset = {"X": X_train_CIFAR10, "y": y_train_CIFAR10}
-
+    
+    
     X_train_CIFAR100, y_train_CIFAR100, X_test_CIFAR100, y_test_CIFAR100 \
-        = load_CIFAR_data(data_type="CIFAR100",
-                          standarized=True, verbose=True)
+    = load_CIFAR_data(data_type="CIFAR100",
+                      standarized = True, verbose = True)
     
     a_, y_train_super, b_, y_test_super \
     = load_CIFAR_data(data_type="CIFAR100", label_mode="coarse",
                       standarized = True, verbose = True)
-    
     del a_, b_
 
-    #Find the relations between superclasses and subclasses
 
     relations = [set() for i in range(np.max(y_train_super)+1)]
     for i, y_fine in enumerate(y_train_CIFAR100):
@@ -138,7 +137,9 @@ if __name__ == "__main__":
         relations[i]=list(relations[i])
     
     del i, y_fine
-
+    print(relations)
+    print(np.array(relations).shape)
+    
     fine_classes_in_use = [[relations[j][i%5] for j in private_classes] 
                            for i in range(N_parties)]
     print(fine_classes_in_use)
@@ -147,16 +148,19 @@ if __name__ == "__main__":
     X_tmp, y_tmp = generate_partial_data(X_test_CIFAR100, y_test_super,
                                          class_in_use = private_classes,
                                          verbose = True)
+    #print(pd.Series(y_tmp).value_counts())
     
     # relabel the selected CIFAR100 data for future convenience
     for index in range(len(private_classes)-1, -1, -1):
         cls_ = private_classes[index]
         y_tmp[y_tmp == cls_] = index + len(public_classes)
     #print(pd.Series(y_tmp).value_counts())    
+    
     private_test_data = {"X": X_tmp, "y": y_tmp}
-    del index, cls_, X_tmp, y_tmp
-    print("="*60)
 
+    del index, cls_, X_tmp, y_tmp
+
+    print("="*60)
     
     #generate private data
     private_data, total_private_data \
@@ -173,15 +177,21 @@ if __name__ == "__main__":
     
     del index, cls_
 
-    mod_private_classes = np.arange(len(private_classes)) + len(public_classes)    
+#     for i in range(N_parties):
+#         print("iter:", i)
+#         print(pd.Series(private_data[i]["y"]).value_counts())
+#     print(pd.Series(total_private_data["y"]).value_counts())
+    
+    
+    
+    mod_private_classes = np.arange(len(private_classes)) + len(public_classes)
+        
     print("=" * 60)    
 
 
     # convert dataset to train_loader and test_loader
     train_dataset = (TensorDataset(torch.from_numpy(X_train_CIFAR10).float(), torch.from_numpy(y_train_CIFAR10).long()))
     test_dataset = (TensorDataset(torch.from_numpy(X_test_CIFAR10).float(), torch.from_numpy(y_test_CIFAR10).long()))
-
-    pre_models_dir = "./pretrained_CIFAR10/"
 
     
     parties = []

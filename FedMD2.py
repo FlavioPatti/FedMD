@@ -8,7 +8,6 @@ import torch.nn as nn
 from utils.Sia import SIA
 from utils.logger import Logger, mkdir_p
 import os
-from torchsummary import summary
 
 def get_logits(model, data_loader, names, cuda):
     model.eval()
@@ -77,30 +76,29 @@ class FedMD():
 
         test_dataset = (TensorDataset(torch.from_numpy(private_test_data["X"]).float(),
                                       torch.from_numpy(private_test_data["y"]).long()))
+        n_init_training = 0
         for i in range(self.N_parties):
             print("model: ", names[i])
             model_A_twin = copy.deepcopy(parties[i])
-            
+
             print("init values:  ")
             # get train_loader and test_loader
             train_dataset = (TensorDataset(torch.from_numpy(private_data[i]["X"]).float(),
                                            torch.from_numpy(private_data[i]["y"]).long()))
+            
+            if names[i].startswith("RESNET20_G"):
+              n_init_training  = 200
+            else:
+              n_init_training  = 50
 
             #print(f"len train = {len(train_dataset)}") 300
             #print(f"len test = {len(test_dataset)}")  600
-            model_A_twin, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_A_twin, train_dataset,
-                                                                               test_dataset, 25, batch_size=32, name = names[i], tqdm_v=False)
+            model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_A_twin, train_dataset,
+                                                                               test_dataset, n_init_training, batch_size=32, name = names[i], tqdm_v=False)
 
             print("full stack training done\n\n")
 
-            model_A = copy.deepcopy(model_A_twin)
-            
-            del model_A.softmax
-
-
-            self.collaborative_parties.append({"model_logits": model_A,
-                                               "model_classifier": model_A_twin,
-                                               "model_weights": model_A_twin.state_dict()})
+            self.collaborative_parties.append({"model": model_A})
 
             self.init_result.append({"val_acc": val_acc,
                                      "train_acc": train_acc,
@@ -119,13 +117,19 @@ class FedMD():
 
         self.upper_bounds = []
         self.pooled_train_result = []
+        n_ub_train = 0
         for i in range(self.N_parties):
             model_ub = copy.deepcopy(parties[i])
+
+            if names[i].startswith("RESNET20_G"):
+              n_ub_train = 150
+            else:
+              n_ub_train = 50
 
             print("model: ", names[i])
             print("UB values:  ")
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_ub, train_dataset,
-                                                                               test_dataset, 25, batch_size=32, name = names[i], tqdm_v = False)
+                                                                               test_dataset, n_ub_train, batch_size=32, name = names[i], tqdm_v = False)
             self.upper_bounds.append(val_acc)
             self.pooled_train_result.append({"val_acc": val_acc, 
                                              "acc": train_acc})
@@ -171,7 +175,7 @@ class FedMD():
             i = 0
             for d in self.collaborative_parties:
               print(f"nome = {names[i]}")
-              logits += get_logits(d["model_logits"], alignment_dataloader, names[i], cuda=True)
+              logits += get_logits(d["model"], alignment_dataloader, names[i], cuda=True)
               i = i + 1
 
             logits /= self.N_parties
@@ -184,7 +188,7 @@ class FedMD():
             #print(f"len private = {len(private_test_dataloader)}") 600
 
             for index, d in enumerate(self.collaborative_parties):
-                metrics_mean = evaluate(d["model_classifier"], private_test_dataloader, cuda = True,name = names[index])
+                metrics_mean = evaluate(d["model"], private_test_dataloader, cuda = True,name = names[index])
                 collaboration_performance[index].append(metrics_mean["acc"])
 
                 print(collaboration_performance[index][-1])
@@ -201,14 +205,11 @@ class FedMD():
                     TensorDataset(torch.from_numpy(alignment_data["X"]).float(), torch.from_numpy(logits).float()))
 
                 #print(f"len public dataloader = {len(public_dataloader)}") 5000
-                d["model_logits"].load_state_dict(d["model_weights"])
-                model_alignment = train(d["model_logits"], public_dataloader, epochs=self.N_logits_matching_round, cuda=True,
+            
+                model_alignment = train(d["model"], public_dataloader, epochs=self.N_logits_matching_round, cuda=True,
                                         batch_size=self.logits_matching_batchsize,
                                         loss_fn=nn.L1Loss(), name = names[index])
-                d["model_logits"] = model_alignment
-                d["model_weights"] = model_alignment.state_dict()
 
-                
                 print("model {0} done alignment".format(index))
 
                 print("model {0} starting training with private data... ".format(index))
@@ -217,13 +218,11 @@ class FedMD():
                                                     torch.from_numpy(self.private_data[index]["y"]).long()))
                 
                 #print(f"len private dataloader = {len(private_dataloader)}") 300
-                d["model_classifier"].load_state_dict(d["model_weights"])
-                model_local = train(d["model_classifier"], private_dataloader, epochs=self.N_private_training_round,
+                model_local = train(model_alignment, private_dataloader, epochs=self.N_private_training_round,
                                     cuda=True, batch_size=self.private_training_batchsize,
                                     loss_fn=nn.CrossEntropyLoss(), name = names[index])
 
-                d["model_classifier"] = model_local
-                d["model_weights"] = model_local.state_dict()
+                d["model"] = model_local
                 print("model {0} done private training. \n".format(index))
             # END FOR LOOP
 

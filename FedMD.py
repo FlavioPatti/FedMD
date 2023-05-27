@@ -76,6 +76,7 @@ class FedMD():
 
         test_dataset = (TensorDataset(torch.from_numpy(private_test_data["X"]).float(),
                                       torch.from_numpy(private_test_data["y"]).long()))
+        n_init_training = 0
         for i in range(self.N_parties):
             print("model: ", names[i])
             model_A_twin = copy.deepcopy(parties[i])
@@ -84,11 +85,16 @@ class FedMD():
             # get train_loader and test_loader
             train_dataset = (TensorDataset(torch.from_numpy(private_data[i]["X"]).float(),
                                            torch.from_numpy(private_data[i]["y"]).long()))
+            
+            if names[i] in ["RESNET20_G"]:
+              n_init_training  = 200
+            else:
+              n_init_training  = 50
 
             #print(f"len train = {len(train_dataset)}") 300
             #print(f"len test = {len(test_dataset)}")  600
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_A_twin, train_dataset,
-                                                                               test_dataset, 25, batch_size=32, name = names[i], tqdm_v=False)
+                                                                               test_dataset, n_init_training, batch_size=32, name = names[i], tqdm_v=False)
 
             print("full stack training done\n\n")
 
@@ -111,13 +117,19 @@ class FedMD():
 
         self.upper_bounds = []
         self.pooled_train_result = []
+        n_ub_train = 0
         for i in range(self.N_parties):
             model_ub = copy.deepcopy(parties[i])
+
+            if names[i] in ["RESNET20_G"]:
+              n_ub_train = 150
+            else:
+              n_ub_train = 50
 
             print("model: ", names[i])
             print("UB values:  ")
             model_A, train_acc, train_loss, val_acc, val_loss = train_and_eval(model_ub, train_dataset,
-                                                                               test_dataset, 50, batch_size=32, name = names[i], tqdm_v = False)
+                                                                               test_dataset, n_ub_train, batch_size=32, name = names[i], tqdm_v = False)
             self.upper_bounds.append(val_acc)
             self.pooled_train_result.append({"val_acc": val_acc, 
                                              "acc": train_acc})
