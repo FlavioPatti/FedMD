@@ -16,7 +16,7 @@
     "epochs": 20,
     "model_saved_dir": None,
     "model_saved_names" : ["CNN_128_256", "CNN_128_512", "CNN_256_256", "CNN_64_128_192",
-                    "CNN_64_128_256", "RESNET20_G","RESNET20_B","ViT-S","ViT-B", "Vit-L"],
+                    "CNN_64_128_256", "RESNET20_G","RESNET20_B","ViT-S","ViT-B", "ViT-L"],
     "early_stopping" : True,
     "N_parties": 10,
     "alpha": 1000,

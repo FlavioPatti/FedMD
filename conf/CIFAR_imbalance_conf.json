@@ -8,7 +8,8 @@
                {"model_type": "resnet20_group", "params": {"lr": 0.1, "device": "cuda"}},
                {"model_type": "resnet20_batch", "params": {"lr": 0.1, "device": "cuda"}},
                {"model_type": "vit_small", "params": {"lr": 0.1, "device": "cuda"}},
-               {"model_type": "vit_base", "params": {"lr": 0.1, "device": "cuda"}}
+               {"model_type": "vit_base", "params": {"lr": 0.1, "device": "cuda"}},
+               {"model_type": "vit_large", "params": {"lr": 0.1, "device": "cuda"}}
               ],
     "pre_train_params": {"min_delta": 0.005, "patience": 3,
                      "batch_size": 128, "epochs": 20, "is_shuffle": True, 
@@ -16,7 +17,7 @@
     "epochs": 20,
     "model_saved_dir": None,
     "model_saved_names" : ["CNN_128_256", "CNN_128_384", "CNN_128_512", "CNN_256_256", "CNN_64_128_192",
-                    "CNN_64_128_256", "RESNET20_G","RESNET20_B","ViT-S","ViT-B"],
+                    "CNN_64_128_256", "RESNET20_G","RESNET20_B","ViT-S","ViT-B", "ViT-L"],
     "early_stopping" : True,
     "N_parties": 10,
     "N_samples_per_class": 20,

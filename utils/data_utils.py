@@ -121,8 +121,14 @@ def load_CIFAR_data(data_type="CIFAR10", label_mode="fine",
         X_train = trainset.data
         X_test = devset.data
 
-        y_train = np.array(trainset.targets)
-        y_test = np.array(devset.targets)
+        if label_mode == "coarse":
+            y_train = np.array(trainset.targets) // 5
+            y_test = np.array(devset.targets) // 5
+        else:
+            y_train = np.array(trainset.targets)
+            y_test = np.array(devset.targets)
+
+        
 
     else:
         print("Unknown Data type. Stopped!")
