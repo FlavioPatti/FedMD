@@ -64,7 +64,7 @@ def init_wandb(args, alpha=None, run_id=None, group = 0):
                     # Set entity to specify your username or team name
                     entity = "aml-2022", 
                     # Set the project where this run will be logged
-                    project="FedMD_IID_5",
+                    project="FedMD_IID_15",
                     group=f'{group}',
                     # Track hyperparameters and run metadata
                     config=configuration,
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     #Model 9: vit-base 
     
     for i, item in enumerate(model_config):
-
+        
         if model_saved_names[i].startswith('ViT'):
           config = CONFIGS[model_saved_names[i]]
           client_model = VisionTransformer(config, 32, zero_head=True, num_classes=n_classes)

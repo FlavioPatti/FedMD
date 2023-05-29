@@ -1,6 +1,5 @@
 {
     "models": [{"model_type": "2_layer_CNN", "params": {"n1": 128, "n2": 256, "dropout_rate": 0.2}},
-               {"model_type": "2_layer_CNN", "params": {"n1": 128, "n2": 384, "dropout_rate": 0.2}},
                {"model_type": "2_layer_CNN", "params": {"n1": 128, "n2": 512, "dropout_rate": 0.2}},
                {"model_type": "2_layer_CNN", "params": {"n1": 256, "n2": 256, "dropout_rate": 0.3}},
                {"model_type": "3_layer_CNN", "params": {"n1": 64, "n2": 128, "n3": 192, "dropout_rate": 0.2}},
@@ -8,15 +7,16 @@
                {"model_type": "resnet20_group", "params": {"lr": 0.1, "device": "cuda"}},
                {"model_type": "resnet20_batch", "params": {"lr": 0.1, "device": "cuda"}},
                {"model_type": "vit_small", "params": {"lr": 0.1, "device": "cuda"}},
-               {"model_type": "vit_base", "params": {"lr": 0.1, "device": "cuda"}}
+               {"model_type": "vit_base", "params": {"lr": 0.1, "device": "cuda"}},
+               {"model_type": "vit_large", "params": {"lr": 0.1, "device": "cuda"}}
               ],
     "pre_train_params": {"min_delta": 0.005, "patience": 3,
                      "batch_size": 128, "epochs": 20, "is_shuffle": True, 
                      "verbose": 0},
     "epochs": 20,
     "model_saved_dir": None,
-    "model_saved_names" : ["CNN_128_256", "CNN_128_384", "CNN_128_512", "CNN_256_256", "CNN_64_128_192",
-                    "CNN_64_128_256", "RESNET20_G","RESNET20_B","ViT-S","ViT-B"],
+    "model_saved_names" : ["CNN_128_256", "CNN_128_512", "CNN_256_256", "CNN_64_128_192",
+                    "CNN_64_128_256", "RESNET20_G","RESNET20_B","ViT-S","ViT-B", "Vit-L"],
     "early_stopping" : True,
     "N_parties": 10,
     "alpha": 1000,
