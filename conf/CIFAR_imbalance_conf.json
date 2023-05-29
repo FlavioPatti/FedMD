@@ -1,6 +1,5 @@
 {
     "models": [{"model_type": "2_layer_CNN", "params": {"n1": 128, "n2": 256, "dropout_rate": 0.2}},
-               {"model_type": "2_layer_CNN", "params": {"n1": 128, "n2": 384, "dropout_rate": 0.2}},
                {"model_type": "2_layer_CNN", "params": {"n1": 128, "n2": 512, "dropout_rate": 0.2}},
                {"model_type": "2_layer_CNN", "params": {"n1": 256, "n2": 256, "dropout_rate": 0.3}},
                {"model_type": "3_layer_CNN", "params": {"n1": 64, "n2": 128, "n3": 192, "dropout_rate": 0.2}},
@@ -16,7 +15,7 @@
                      "verbose": 0},
     "epochs": 20,
     "model_saved_dir": None,
-    "model_saved_names" : ["CNN_128_256", "CNN_128_384", "CNN_128_512", "CNN_256_256", "CNN_64_128_192",
+    "model_saved_names" : ["CNN_128_256", "CNN_128_512", "CNN_256_256", "CNN_64_128_192",
                     "CNN_64_128_256", "RESNET20_G","RESNET20_B","ViT-S","ViT-B", "ViT-L"],
     "early_stopping" : True,
     "N_parties": 10,
