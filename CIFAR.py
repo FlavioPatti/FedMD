@@ -12,7 +12,7 @@ from utils.Neural_Networks import cnn_2layers, cnn_3layers, train_and_eval, eval
 from utils.Resnet20Batch import Resnet20_batchNorm
 from utils.Resnet20Group import Resnet20_groupNorm
 from utils.Resnet50 import ResNet50
-from vision_transformer import VisionTransformer, CONFIGS
+from utils.vision_transformer import VisionTransformer, CONFIGS
 import wandb
 
 os.environ["WANDB_API_KEY"] = "a4771dae610ad0306d4c407ecca287079d83d0d9"
